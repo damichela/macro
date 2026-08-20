@@ -1620,8 +1620,9 @@ function subirSeed(){
 // ── Navegación ────────────────────────────────────────────────────
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("on", t.dataset.tab===name); });
-  ["reportar","importar","consolidado","acumulado","historico","equipo","inventario"].forEach(function(v){
-    $("view-"+v).classList.toggle("hidden", v!==name);
+  ["importar","consolidado","acumulado","historico","equipo","inventario"].forEach(function(v){
+    var el = $("view-"+v);
+    if (el) el.classList.toggle("hidden", v!==name);
   });
   if (name==="consolidado") renderConsolidado();
   if (name==="acumulado") renderAcumulado();
