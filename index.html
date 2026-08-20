@@ -127,6 +127,7 @@
   <button class="tab on" data-tab="consolidado">Consolidado</button>
   <button class="tab" data-tab="acumulado">Acumulado</button>
   <button class="tab" data-tab="historico">Histórico</button>
+  <button class="tab" data-tab="equipo" id="tabBtnEquipo">Equipo</button>
 </nav>
 
 <!-- REPORTAR -->
@@ -258,6 +259,45 @@
       <tbody id="tablaProy"></tbody>
     </table>
     <div class="muted" style="font-size:12px; margin-top:8px" id="proyNota"></div>
+  </div>
+</section>
+
+<!-- EQUIPO -->
+<section id="view-equipo" class="hidden">
+  <div class="card">
+    <div class="sec-title">RANGO DE FECHAS</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+      <label class="f" style="flex:1; min-width:130px"><span>Desde</span>
+        <input type="date" id="eqDesde" style="font-family:inherit; font-size:15px; padding:9px 10px; border:1.5px solid #B8BCB6; border-radius:8px; background:#FBFAF7; width:100%; box-sizing:border-box"></label>
+      <label class="f" style="flex:1; min-width:130px"><span>Hasta</span>
+        <input type="date" id="eqHasta" style="font-family:inherit; font-size:15px; padding:9px 10px; border:1.5px solid #B8BCB6; border-radius:8px; background:#FBFAF7; width:100%; box-sizing:border-box"></label>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
+      <button class="btn ghost" id="eqQ1" style="flex:1; min-width:120px">Quincena 1 (1-13)</button>
+      <button class="btn ghost" id="eqQ2" style="flex:1; min-width:120px">Quincena 2 (14-fin)</button>
+      <button class="btn ghost" id="eqMes" style="flex:1; min-width:120px">Mes completo</button>
+    </div>
+    <button class="btn" id="eqCalc" style="margin-top:10px">Calcular</button>
+    <div class="muted" id="eqInfo" style="font-size:12.5px; margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <div class="sec-title">COMISIONES POR VENDEDORA</div>
+    <div class="muted" style="font-size:12px; margin-bottom:8px">Comisión = venta ÷ 140 (1 unidad por cada $140 vendidos).</div>
+    <table>
+      <thead><tr><th>Vendedora</th><th>Tienda</th><th class="n">Venta $</th><th class="n">Piezas</th><th class="n">Comisión</th></tr></thead>
+      <tbody id="eqComisiones"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="sec-title">RANKING DE VENDEDORAS (por venta)</div>
+    <div class="chart-box"><canvas id="eqChartVend"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="sec-title">MARCAS MÁS VENDIDAS</div>
+    <table>
+      <thead><tr><th>Marca</th><th class="n">Piezas</th><th class="n">Venta $</th><th class="n">% venta</th></tr></thead>
+      <tbody id="eqMarcas"></tbody>
+    </table>
   </div>
 </section>
 
@@ -1185,15 +1225,118 @@ function guardarImport(){
     .finally(function(){ btn.disabled = false; btn.textContent = "Guardar este día en Macro"; });
 }
 
+
+// ── Equipo: comisiones, ranking, marcas ───────────────────────────
+function getDetalle(){
+  return (window.DETALLE && window.DETALLE.length) ? window.DETALLE : [];
+}
+function ultimoDiaMes(mes){ var p = mes.split("-").map(Number); return new Date(p[0], p[1], 0).getDate(); }
+
+function setRango(desde, hasta){
+  $("eqDesde").value = desde;
+  $("eqHasta").value = hasta;
+  renderEquipo();
+}
+function renderEquipo(){
+  // Fechas por defecto: mes de la fecha seleccionada arriba
+  if (!$("eqDesde").value || !$("eqHasta").value) {
+    var mes = monthOf($("fecha").value || todayStr());
+    var ld = ultimoDiaMes(mes);
+    $("eqDesde").value = mes + "-01";
+    $("eqHasta").value = mes + "-" + String(ld).padStart(2,"0");
+  }
+  var desde = $("eqDesde").value, hasta = $("eqHasta").value;
+  var det = getDetalle().filter(function(d){ return d.fecha >= desde && d.fecha <= hasta; });
+
+  $("eqInfo").textContent = det.length
+    ? ("Rango "+shortLabel(desde)+" a "+shortLabel(hasta)+" · "+det.length+" líneas de detalle.")
+    : ("Sin detalle en este rango. Importa días con detalle para ver comisiones, ranking y marcas.");
+
+  // Comisiones por vendedora (agrupa vendedora+tienda)
+  var byVend = {};
+  det.forEach(function(d){
+    var key = (d.vendedora||"?") + "||" + d.tienda;
+    if (!byVend[key]) byVend[key] = { vendedora:d.vendedora||"?", tienda:d.tienda, venta:0, pz:0 };
+    byVend[key].venta += (d.pv||0);
+    byVend[key].pz += 1;
+  });
+  var filas = Object.keys(byVend).map(function(k){ return byVend[k]; })
+    .sort(function(a,b){ return b.venta - a.venta; });
+
+  var tb = $("eqComisiones");
+  tb.innerHTML = "";
+  if (!filas.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="muted">Sin datos en el rango.</td></tr>';
+  } else {
+    var tV=0, tP=0, tC=0;
+    filas.forEach(function(f){
+      var com = r2(f.venta/140);
+      tV+=f.venta; tP+=f.pz; tC+=com;
+      var bColor = (BRANCHES.find(function(b){return b.id===f.tienda;})||{}).color || "#999";
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+f.vendedora+"</td>"+
+        "<td><span class=\"dot\" style=\"background:"+bColor+"; margin-right:5px\"></span>"+(BRANCHES.find(function(b){return b.id===f.tienda;})||{name:f.tienda}).name+"</td>"+
+        "<td class=\"n\">"+fmt(r2(f.venta))+"</td>"+
+        "<td class=\"n\">"+fmt(f.pz)+"</td>"+
+        "<td class=\"n\">"+fmt(com)+"</td>";
+      tb.appendChild(tr);
+    });
+    var trT = document.createElement("tr"); trT.className="tot";
+    trT.innerHTML = "<td>Total</td><td></td><td class=\"n\">"+fmt(r2(tV))+"</td><td class=\"n\">"+fmt(tP)+"</td><td class=\"n\">"+fmt(r2(tC))+"</td>";
+    tb.appendChild(trT);
+  }
+
+  // Ranking de vendedoras (suma por nombre, todas las tiendas)
+  var byName = {};
+  det.forEach(function(d){
+    var n = d.vendedora||"?";
+    byName[n] = (byName[n]||0) + (d.pv||0);
+  });
+  var rank = Object.keys(byName).map(function(n){ return {n:n, v:r2(byName[n])}; })
+    .sort(function(a,b){ return b.v-a.v; }).slice(0,12);
+
+  if (typeof Chart !== "undefined") {
+    if (rank.length) {
+      drawChart("eqChartVend","bar", rank.map(function(x){return x.n;}),
+        [{ label:"Venta $", data:rank.map(function(x){return x.v;}), backgroundColor:"#0E6B4C" }],
+        function(v){ return "$"+fmt(v); });
+    } else if (charts["eqChartVend"]) { charts["eqChartVend"].destroy(); charts["eqChartVend"]=null; }
+  }
+
+  // Marcas
+  var byMarca = {};
+  det.forEach(function(d){
+    var m = d.marca||"?";
+    if (!byMarca[m]) byMarca[m] = { pz:0, v:0 };
+    byMarca[m].pz += 1; byMarca[m].v += (d.pv||0);
+  });
+  var totMarca = Object.keys(byMarca).reduce(function(s,m){ return s+byMarca[m].v; }, 0);
+  var marcas = Object.keys(byMarca).map(function(m){ return {m:m, pz:byMarca[m].pz, v:r2(byMarca[m].v)}; })
+    .sort(function(a,b){ return b.v-a.v; });
+  var mb = $("eqMarcas");
+  mb.innerHTML = "";
+  if (!marcas.length) {
+    mb.innerHTML = '<tr><td colspan="4" class="muted">Sin datos en el rango.</td></tr>';
+  } else {
+    marcas.forEach(function(x){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+x.m+"</td><td class=\"n\">"+fmt(x.pz)+"</td><td class=\"n\">"+fmt(x.v)+
+        "</td><td class=\"n\">"+(totMarca>0?fmt(x.v/totMarca*100)+"%":"—")+"</td>";
+      mb.appendChild(tr);
+    });
+  }
+}
+
 // ── Navegación ────────────────────────────────────────────────────
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("on", t.dataset.tab===name); });
-  ["reportar","importar","consolidado","acumulado","historico"].forEach(function(v){
+  ["reportar","importar","consolidado","acumulado","historico","equipo"].forEach(function(v){
     $("view-"+v).classList.toggle("hidden", v!==name);
   });
   if (name==="consolidado") renderConsolidado();
   if (name==="acumulado") renderAcumulado();
   if (name==="historico") renderHistorico();
+  if (name==="equipo") renderEquipo();
 }
 
 // ── Inicio ────────────────────────────────────────────────────────
@@ -1222,6 +1365,7 @@ function init(){
     $("bannerJefe").classList.remove("hidden");
     $("tabBtnReportar").classList.add("hidden");
     $("tabBtnImportar").classList.add("hidden");
+    $("tabBtnEquipo").classList.add("hidden");
     $("consoBtns").classList.add("hidden");
     $("jefeBtns").classList.remove("hidden");
     $("btnRefrescar").addEventListener("click", function(){ location.reload(); });
@@ -1239,6 +1383,10 @@ function init(){
     });
     $("btnGuardarMetas").addEventListener("click", guardarMetas);
     $("btnAnalizar").addEventListener("click", analizarImport);
+    $("eqCalc").addEventListener("click", renderEquipo);
+    $("eqQ1").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-01", m+"-13"); });
+    $("eqQ2").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-14", m+"-"+String(ultimoDiaMes(m)).padStart(2,"0")); });
+    $("eqMes").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-01", m+"-"+String(ultimoDiaMes(m)).padStart(2,"0")); });
   }
 
   $("fecha").addEventListener("change", function(){
