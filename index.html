@@ -96,6 +96,16 @@
 </style>
 </head>
 <body>
+<div id="loginScreen" style="position:fixed; inset:0; background:var(--paper); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px">
+  <div style="max-width:360px; width:100%; text-align:center">
+    <div style="font-weight:800; font-size:26px; letter-spacing:.06em; margin-bottom:6px">VENTAS MACRO</div>
+    <div style="font-size:13px; color:#5B615D; margin-bottom:24px">Ingresa tu contraseña para continuar</div>
+    <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="off"
+      style="width:100%; font-family:'JetBrains Mono',monospace; font-size:16px; padding:12px 14px; border:2px solid var(--ink); border-radius:10px; background:#fff; box-sizing:border-box; text-align:center">
+    <button id="loginBtn" style="width:100%; margin-top:12px; padding:13px; font:inherit; font-size:15px; font-weight:700; background:var(--ink); color:var(--paper); border:none; border-radius:10px; cursor:pointer">Entrar</button>
+    <div id="loginErr" style="display:none; margin-top:12px; color:#8C2F1F; font-size:13.5px">Contraseña incorrecta.</div>
+  </div>
+</div>
 
 <header>
   <div>
@@ -133,6 +143,7 @@
   <button class="tab" data-tab="acumulado">Acumulado</button>
   <button class="tab" data-tab="historico">Histórico</button>
   <button class="tab" data-tab="equipo" id="tabBtnEquipo">Equipo</button>
+  <button class="tab" data-tab="inventario" id="tabBtnInventario">Inventario</button>
 </nav>
 
 <!-- REPORTAR -->
@@ -274,6 +285,61 @@
     </table>
     <div class="muted" style="font-size:12px; margin-top:8px" id="proyNota"></div>
   </div>
+  <div class="card" id="histFormCard">
+    <div class="sec-title">AGREGAR / EDITAR UN MES HISTÓRICO</div>
+    <div class="muted" style="font-size:12.5px; margin-bottom:10px">
+      Carga ventas de meses de años anteriores. Se guardan en la hoja "Ventas Macro" (pestaña Historico).
+      Deja en blanco una tienda que no operaba ese mes.
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px">
+      <label class="f" style="flex:1; min-width:90px"><span>Año</span>
+        <input type="text" inputmode="numeric" id="hfAnio" placeholder="2023" style="font-family:'JetBrains Mono',monospace; font-size:16px; padding:9px 10px; border:1.5px solid #B8BCB6; border-radius:8px; background:#FBFAF7; width:100%; box-sizing:border-box"></label>
+      <label class="f" style="flex:1; min-width:110px"><span>Mes</span>
+        <select id="hfMes" style="font:inherit; font-size:15px; padding:9px 10px; border:1.5px solid #B8BCB6; border-radius:8px; background:#FBFAF7; width:100%; box-sizing:border-box"></select></label>
+    </div>
+    <div class="grid">
+      <label class="f"><span>Cima</span><input type="text" inputmode="decimal" id="hfCima" placeholder="—"></label>
+      <label class="f"><span>Dorado</span><input type="text" inputmode="decimal" id="hfDorado" placeholder="—"></label>
+      <label class="f"><span>Fiorillo</span><input type="text" inputmode="decimal" id="hfFiorillo" placeholder="—"></label>
+      <label class="f"><span>Centro</span><input type="text" inputmode="decimal" id="hfCentro" placeholder="—"></label>
+    </div>
+    <button class="btn" id="hfGuardar" style="margin-top:12px">Guardar mes histórico</button>
+    <div class="status" id="hfStatus"></div>
+    <div style="margin-top:14px; border-top:1.5px dashed var(--line); padding-top:12px">
+      <div class="muted" style="font-size:12px; margin-bottom:8px">
+        ¿Primera vez? Sube el histórico 2024-2025 que ya trae la app a la hoja, para tenerlo guardado y editable.
+      </div>
+      <button class="btn ghost" id="hfSubirSeed">Subir histórico 2024-2025 a la hoja</button>
+      <div class="status" id="hfSeedStatus"></div>
+    </div>
+  </div>
+</section>
+
+<!-- INVENTARIO -->
+<section id="view-inventario" class="hidden">
+  <div class="card">
+    <div class="sec-title" id="invTitle">INVENTARIO DEL MES</div>
+    <table>
+      <thead><tr><th>Tienda</th><th class="n">Piezas al cierre</th><th class="n">Vendidas en el mes</th></tr></thead>
+      <tbody id="invTabla"></tbody>
+    </table>
+    <div class="muted" style="font-size:12px; margin-top:8px" id="invNota"></div>
+  </div>
+  <div class="card">
+    <div class="sec-title">MARCAS MÁS VENDIDAS (del mes)</div>
+    <table>
+      <thead><tr><th>Marca</th><th class="n">Piezas</th><th class="n">Venta $</th><th class="n">% venta</th></tr></thead>
+      <tbody id="invMarcas"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="sec-title">TALLAS MÁS VENDIDAS (del mes)</div>
+    <div class="chart-box"><canvas id="invChartTallas"></canvas></div>
+    <table style="margin-top:12px">
+      <thead><tr><th>Talla</th><th class="n">Piezas</th><th class="n">% del total</th></tr></thead>
+      <tbody id="invTallas"></tbody>
+    </table>
+  </div>
 </section>
 
 <!-- EQUIPO -->
@@ -306,19 +372,44 @@
     <div class="sec-title">RANKING DE VENDEDORAS (por venta)</div>
     <div class="chart-box"><canvas id="eqChartVend"></canvas></div>
   </div>
-  <div class="card">
-    <div class="sec-title">MARCAS MÁS VENDIDAS</div>
-    <table>
-      <thead><tr><th>Marca</th><th class="n">Piezas</th><th class="n">Venta $</th><th class="n">% venta</th></tr></thead>
-      <tbody id="eqMarcas"></tbody>
-    </table>
-  </div>
 </section>
 
 <footer id="footerTxt">Los datos se guardan en Google Sheets. El respaldo extra es el Excel semanal.</footer>
 
 <script>
 "use strict";
+
+// ── Login (contraseña) ────────────────────────────────────────────
+var PW_ADMIN = "a78ca40dd9d02dfa452c92fadf52d31a1792142d8cd867f7292c40ced2d686ac";
+var PW_JEFE  = "77f7a32c694e6667674f80886a0f2aa472e4245ee4b44b028dbf45fad6c65aff";
+var LOGIN_ROLE = null; // "admin" | "jefe"
+
+async function sha256Hex(msg){
+  var buf = new TextEncoder().encode(msg);
+  var hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+}
+async function intentarLogin(){
+  var val = document.getElementById("loginPass").value;
+  var h = await sha256Hex(val);
+  if (h === PW_ADMIN) { LOGIN_ROLE = "admin"; arrancarApp(); }
+  else if (h === PW_JEFE) { LOGIN_ROLE = "jefe"; arrancarApp(); }
+  else { document.getElementById("loginErr").style.display = "block"; }
+}
+function arrancarApp(){
+  document.getElementById("loginScreen").style.display = "none";
+  // Si la clave es de jefe, forzar modo jefe aunque el enlace no tenga #jefe
+  if (LOGIN_ROLE === "jefe") esJefe = true;
+  initApp();
+}
+function setupLogin(){
+  var btn = document.getElementById("loginBtn");
+  var inp = document.getElementById("loginPass");
+  btn.addEventListener("click", intentarLogin);
+  inp.addEventListener("keydown", function(e){ if (e.key === "Enter") intentarLogin(); });
+  inp.focus();
+}
+
 var SCRIPT_URL_DEFAULT = "";
 var SCRIPT_URL = (function(){
   try { var u = localStorage.getItem("macro.scriptUrl"); if (u) return u; } catch(e){}
@@ -956,6 +1047,67 @@ function exportExcel(){
     ws5["!cols"] = [{wch:6},{wch:5},{wch:10},{wch:10},{wch:9},{wch:10},{wch:11}];
     XLSX.utils.book_append_sheet(wb, ws5, "Histórico mensual");
 
+    // ── Hojas nuevas: Comisiones, Inventario, Marcas, Tallas (mes de la fecha) ──
+    var mesX = monthOf($("fecha").value || todayStr());
+    var detMes = (window.DETALLE||[]).filter(function(d){ return monthOf(d.fecha) === mesX; });
+
+    // Comisiones por vendedora
+    var byV = {};
+    detMes.forEach(function(d){
+      var k=(d.vendedora||"?")+"||"+d.tienda;
+      if(!byV[k]) byV[k]={vend:d.vendedora||"?",tienda:d.tienda,venta:0,pz:0};
+      byV[k].venta+=(d.pv||0); byV[k].pz+=1;
+    });
+    var comData=[["Vendedora","Tienda","Venta $","Piezas","Comisión (venta/140)"]];
+    Object.keys(byV).map(function(k){return byV[k];}).sort(function(a,b){return b.venta-a.venta;}).forEach(function(f){
+      var nm=(BRANCHES.find(function(b){return b.id===f.tienda;})||{name:f.tienda}).name;
+      comData.push([f.vend, nm, r2(f.venta), f.pz, r2(f.venta/140)]);
+    });
+    if(comData.length>1){
+      var wsC=XLSX.utils.aoa_to_sheet(comData);
+      wsC["!cols"]=[{wch:12},{wch:10},{wch:11},{wch:8},{wch:16}];
+      XLSX.utils.book_append_sheet(wb, wsC, "Comisiones");
+    }
+
+    // Inventario (cierre + vendidas por tienda)
+    var datesMes = sortedDates().filter(function(d){ return monthOf(d)===mesX; });
+    if(datesMes.length){
+      var ult=datesMes[datesMes.length-1];
+      var invData=[["Tienda","Piezas al cierre","Vendidas en el mes"]];
+      BRANCHES.forEach(function(b){
+        var cierre=(DATA.days[ult]&&DATA.days[ult][b.id])?(DATA.days[ult][b.id].inv||0):"";
+        var vend=0; datesMes.forEach(function(d){var r=DATA.days[d][b.id]; if(r)vend+=(r.pz||0);});
+        invData.push([b.name, cierre, vend]);
+      });
+      var wsI=XLSX.utils.aoa_to_sheet(invData);
+      wsI["!cols"]=[{wch:10},{wch:16},{wch:18}];
+      XLSX.utils.book_append_sheet(wb, wsI, "Inventario");
+    }
+
+    // Marcas
+    var bMar={}; detMes.forEach(function(d){var m=d.marca||"?"; if(!bMar[m])bMar[m]={pz:0,v:0}; bMar[m].pz+=1; bMar[m].v+=(d.pv||0);});
+    if(Object.keys(bMar).length){
+      var marData=[["Marca","Piezas","Venta $"]];
+      Object.keys(bMar).map(function(m){return {m:m,pz:bMar[m].pz,v:r2(bMar[m].v)};}).sort(function(a,b){return b.v-a.v;}).forEach(function(x){
+        marData.push([x.m,x.pz,x.v]);
+      });
+      var wsM=XLSX.utils.aoa_to_sheet(marData);
+      wsM["!cols"]=[{wch:14},{wch:8},{wch:11}];
+      XLSX.utils.book_append_sheet(wb, wsM, "Marcas");
+    }
+
+    // Tallas
+    var bTal={}; detMes.forEach(function(d){var t=(d.talla||"?").toString().trim()||"?"; bTal[t]=(bTal[t]||0)+1;});
+    if(Object.keys(bTal).length){
+      var talData=[["Talla","Piezas"]];
+      Object.keys(bTal).map(function(t){return {t:t,pz:bTal[t]};}).sort(function(a,b){return b.pz-a.pz;}).forEach(function(x){
+        talData.push([x.t,x.pz]);
+      });
+      var wsT=XLSX.utils.aoa_to_sheet(talData);
+      wsT["!cols"]=[{wch:10},{wch:8}];
+      XLSX.utils.book_append_sheet(wb, wsT, "Tallas");
+    }
+
     XLSX.writeFile(wb, "ventas_"+todayStr()+".xlsx");
   } catch(e){
     console.error(e);
@@ -965,7 +1117,8 @@ function exportExcel(){
 
 
 // ── Histórico mensual (2024-2026, del Excel de Dana; espacio listo para 2022-2023) ──
-var HIST = {"2023":{"DIC":{"cima":25351.5,"dorado":24394.5,"fiorillo":4220,"centro":null}},"2024":{"ENE":{"cima":5435,"dorado":5691,"fiorillo":825,"centro":null},"FEB":{"cima":6549,"dorado":5353,"fiorillo":991,"centro":null},"MAR":{"cima":7418,"dorado":6776,"fiorillo":1022,"centro":null},"ABR":{"cima":8713,"dorado":6089,"fiorillo":1012,"centro":null},"MAY":{"cima":10017,"dorado":6432,"fiorillo":1615,"centro":null},"JUN":{"cima":12701,"dorado":9556,"fiorillo":3472,"centro":null},"JUL":{"cima":15561,"dorado":14472,"fiorillo":4233,"centro":null},"AGO":{"cima":11891,"dorado":11759,"fiorillo":3612,"centro":null},"SEP":{"cima":18087,"dorado":15129,"fiorillo":4144,"centro":null},"OCT":{"cima":14037,"dorado":11496,"fiorillo":3248,"centro":null},"NOV":{"cima":13120,"dorado":9566,"fiorillo":3164,"centro":null},"DIC":{"cima":38985,"dorado":29653,"fiorillo":10257,"centro":90302}},"2025":{"ENE":{"cima":6735,"dorado":6547,"fiorillo":2007,"centro":8345},"FEB":{"cima":7253.03,"dorado":6704,"fiorillo":1798,"centro":7160.4},"MAR":{"cima":11249.3,"dorado":7516.2,"fiorillo":1959,"centro":9616.52},"ABR":{"cima":9986.4,"dorado":8175,"fiorillo":2072,"centro":8550.5},"MAY":{"cima":10944.8,"dorado":8920.78,"fiorillo":2646.5,"centro":9592.05},"JUN":{"cima":12705.4,"dorado":8286.34,"fiorillo":2423,"centro":9128.54},"JUL":{"cima":12301.9,"dorado":8348.1,"fiorillo":3313,"centro":12947.9},"AGO":{"cima":11606,"dorado":9165,"fiorillo":2256,"centro":10318},"SEP":{"cima":18635,"dorado":12770.51,"fiorillo":3528,"centro":21914.94},"OCT":{"cima":10368,"dorado":9237.8,"fiorillo":2201,"centro":13014.4},"NOV":{"cima":13187.36,"dorado":10229,"fiorillo":1503,"centro":15451.21},"DIC":{"cima":43783.5,"dorado":35434.03,"fiorillo":6543,"centro":80597.3}},"2026":{"ENE":{"cima":7480,"dorado":7540,"fiorillo":1687,"centro":7631.08},"FEB":{"cima":10269.2,"dorado":9792,"fiorillo":2227,"centro":7128},"MAR":{"cima":10400.9,"dorado":11928,"fiorillo":2506,"centro":8710.72},"ABR":{"cima":10229.25,"dorado":8949,"fiorillo":2039,"centro":6710},"MAY":{"cima":12169,"dorado":9346.2,"fiorillo":2926,"centro":9628.38},"JUN":{"cima":12059,"dorado":10674.66,"fiorillo":2380,"centro":9468.25},"JUL":{"cima":18717,"dorado":12591,"fiorillo":3821,"centro":15767.46}}};
+var HIST_SEED = {"2023":{"DIC":{"cima":25351.5,"dorado":24394.5,"fiorillo":4220,"centro":null}},"2024":{"ENE":{"cima":5435,"dorado":5691,"fiorillo":825,"centro":null},"FEB":{"cima":6549,"dorado":5353,"fiorillo":991,"centro":null},"MAR":{"cima":7418,"dorado":6776,"fiorillo":1022,"centro":null},"ABR":{"cima":8713,"dorado":6089,"fiorillo":1012,"centro":null},"MAY":{"cima":10017,"dorado":6432,"fiorillo":1615,"centro":null},"JUN":{"cima":12701,"dorado":9556,"fiorillo":3472,"centro":null},"JUL":{"cima":15561,"dorado":14472,"fiorillo":4233,"centro":null},"AGO":{"cima":11891,"dorado":11759,"fiorillo":3612,"centro":null},"SEP":{"cima":18087,"dorado":15129,"fiorillo":4144,"centro":null},"OCT":{"cima":14037,"dorado":11496,"fiorillo":3248,"centro":null},"NOV":{"cima":13120,"dorado":9566,"fiorillo":3164,"centro":null},"DIC":{"cima":38985,"dorado":29653,"fiorillo":10257,"centro":90302}},"2025":{"ENE":{"cima":6735,"dorado":6547,"fiorillo":2007,"centro":8345},"FEB":{"cima":7253.03,"dorado":6704,"fiorillo":1798,"centro":7160.4},"MAR":{"cima":11249.3,"dorado":7516.2,"fiorillo":1959,"centro":9616.52},"ABR":{"cima":9986.4,"dorado":8175,"fiorillo":2072,"centro":8550.5},"MAY":{"cima":10944.8,"dorado":8920.78,"fiorillo":2646.5,"centro":9592.05},"JUN":{"cima":12705.4,"dorado":8286.34,"fiorillo":2423,"centro":9128.54},"JUL":{"cima":12301.9,"dorado":8348.1,"fiorillo":3313,"centro":12947.9},"AGO":{"cima":11606,"dorado":9165,"fiorillo":2256,"centro":10318},"SEP":{"cima":18635,"dorado":12770.51,"fiorillo":3528,"centro":21914.94},"OCT":{"cima":10368,"dorado":9237.8,"fiorillo":2201,"centro":13014.4},"NOV":{"cima":13187.36,"dorado":10229,"fiorillo":1503,"centro":15451.21},"DIC":{"cima":43783.5,"dorado":35434.03,"fiorillo":6543,"centro":80597.3}},"2026":{"ENE":{"cima":7480,"dorado":7540,"fiorillo":1687,"centro":7631.08},"FEB":{"cima":10269.2,"dorado":9792,"fiorillo":2227,"centro":7128},"MAR":{"cima":10400.9,"dorado":11928,"fiorillo":2506,"centro":8710.72},"ABR":{"cima":10229.25,"dorado":8949,"fiorillo":2039,"centro":6710},"MAY":{"cima":12169,"dorado":9346.2,"fiorillo":2926,"centro":9628.38},"JUN":{"cima":12059,"dorado":10674.66,"fiorillo":2380,"centro":9468.25},"JUL":{"cima":18717,"dorado":12591,"fiorillo":3821,"centro":15767.46}}};
+var HIST = JSON.parse(JSON.stringify(HIST_SEED));
 var MESES_H = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 var YEAR_COLORS = { "2024":"#9AA09A", "2025":"#B4690E", "2026":"#0E6B4C" };
 var META_AGO_ACTUAL = { cima:19000, dorado:15000, fiorillo:4000, centro:19000 };
@@ -1253,6 +1406,79 @@ function guardarImport(){
 }
 
 
+
+// ── Inventario: cierre, vendidas, marcas, tallas ──────────────────
+function renderInventario(){
+  var mes = monthOf($("fecha").value || todayStr());
+  $("invTitle").textContent = "INVENTARIO DE " + monthLabel(mes);
+
+  // Piezas al cierre (último inv de cada tienda en el mes) y vendidas (suma piezas del mes)
+  var dates = sortedDates().filter(function(d){ return monthOf(d) === mes; });
+  var tb = $("invTabla");
+  tb.innerHTML = "";
+  if (dates.length === 0) {
+    tb.innerHTML = '<tr><td colspan="3" class="muted">Sin días reportados en este mes.</td></tr>';
+    $("invNota").textContent = "";
+  } else {
+    var ultimo = dates[dates.length-1];
+    var totCierre = 0, totVend = 0;
+    BRANCHES.forEach(function(b){
+      var cierre = (DATA.days[ultimo] && DATA.days[ultimo][b.id]) ? (DATA.days[ultimo][b.id].inv||0) : null;
+      var vend = 0;
+      dates.forEach(function(d){ var r=DATA.days[d][b.id]; if(r) vend += (r.pz||0); });
+      totCierre += (cierre||0); totVend += vend;
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td><span class=\"dot\" style=\"background:"+b.color+"; margin-right:6px\"></span>"+b.name+"</td>"+
+        "<td class=\"n\">"+(cierre!=null?fmt(cierre):"—")+"</td>"+
+        "<td class=\"n\">"+fmt(vend)+"</td>";
+      tb.appendChild(tr);
+    });
+    var trT = document.createElement("tr"); trT.className="tot";
+    trT.innerHTML = "<td>Total</td><td class=\"n\">"+fmt(totCierre)+"</td><td class=\"n\">"+fmt(totVend)+"</td>";
+    tb.appendChild(trT);
+    $("invNota").textContent = "Piezas al cierre = inventario del último día reportado ("+dateLabel(ultimo)+"). Vendidas = suma de piezas del mes.";
+  }
+
+  // Detalle del mes para marcas y tallas
+  var det = getDetalle().filter(function(d){ return monthOf(d.fecha) === mes; });
+
+  // Marcas
+  var byMarca = {};
+  det.forEach(function(d){ var m=d.marca||"?"; if(!byMarca[m]) byMarca[m]={pz:0,v:0}; byMarca[m].pz+=1; byMarca[m].v+=(d.pv||0); });
+  var totMV = Object.keys(byMarca).reduce(function(s,m){return s+byMarca[m].v;},0);
+  var marcas = Object.keys(byMarca).map(function(m){return {m:m,pz:byMarca[m].pz,v:r2(byMarca[m].v)};}).sort(function(a,b){return b.v-a.v;});
+  var mb = $("invMarcas"); mb.innerHTML = "";
+  if(!marcas.length){ mb.innerHTML='<tr><td colspan="4" class="muted">Sin detalle importado en el mes.</td></tr>'; }
+  else marcas.forEach(function(x){
+    var tr=document.createElement("tr");
+    tr.innerHTML="<td>"+x.m+"</td><td class=\"n\">"+fmt(x.pz)+"</td><td class=\"n\">"+fmt(x.v)+"</td><td class=\"n\">"+(totMV>0?fmt(x.v/totMV*100)+"%":"—")+"</td>";
+    mb.appendChild(tr);
+  });
+
+  // Tallas
+  var byTalla = {};
+  det.forEach(function(d){ var t=(d.talla||"?").toString().trim()||"?"; byTalla[t]=(byTalla[t]||0)+1; });
+  var totT = Object.keys(byTalla).reduce(function(s,t){return s+byTalla[t];},0);
+  var tallas = Object.keys(byTalla).map(function(t){return {t:t,pz:byTalla[t]};})
+    .sort(function(a,b){ return b.pz-a.pz; });
+  var tbl = $("invTallas"); tbl.innerHTML="";
+  if(!tallas.length){ tbl.innerHTML='<tr><td colspan="3" class="muted">Sin detalle importado en el mes.</td></tr>'; }
+  else tallas.forEach(function(x){
+    var tr=document.createElement("tr");
+    tr.innerHTML="<td>"+x.t+"</td><td class=\"n\">"+fmt(x.pz)+"</td><td class=\"n\">"+(totT>0?fmt(x.pz/totT*100)+"%":"—")+"</td>";
+    tbl.appendChild(tr);
+  });
+
+  if (typeof Chart !== "undefined") {
+    var top = tallas.slice(0,12);
+    if (top.length) {
+      drawChart("invChartTallas","bar", top.map(function(x){return x.t;}),
+        [{ label:"Piezas", data:top.map(function(x){return x.pz;}), backgroundColor:"#4A6FA5" }],
+        function(v){ return fmt(v)+" pzas"; });
+    } else if (charts["invChartTallas"]) { charts["invChartTallas"].destroy(); charts["invChartTallas"]=null; }
+  }
+}
+
 // ── Equipo: comisiones, ranking, marcas ───────────────────────────
 function getDetalle(){
   return (window.DETALLE && window.DETALLE.length) ? window.DETALLE : [];
@@ -1341,6 +1567,7 @@ function renderEquipo(){
   var marcas = Object.keys(byMarca).map(function(m){ return {m:m, pz:byMarca[m].pz, v:r2(byMarca[m].v)}; })
     .sort(function(a,b){ return b.v-a.v; });
   var mb = $("eqMarcas");
+  if (!mb) return;
   mb.innerHTML = "";
   if (!marcas.length) {
     mb.innerHTML = '<tr><td colspan="4" class="muted">Sin datos en el rango.</td></tr>';
@@ -1354,16 +1581,61 @@ function renderEquipo(){
   }
 }
 
+
+// ── Formulario histórico ──────────────────────────────────────────
+function initHistForm(){
+  var sel = $("hfMes");
+  if (sel && !sel.options.length) {
+    MESES_H.forEach(function(m){ var o=document.createElement("option"); o.value=m; o.textContent=m; sel.appendChild(o); });
+  }
+}
+function guardarHistMes(){
+  var anio = ($("hfAnio").value||"").trim();
+  var mes = $("hfMes").value;
+  if (!/^\d{4}$/.test(anio)) { showStatus("hfStatus","err","Escribe un año de 4 dígitos (ej. 2023)."); return; }
+  function pv(id){ var v=$(id).value.trim(); return v==="" ? null : parseNum(v); }
+  var vals = { cima:pv("hfCima"), dorado:pv("hfDorado"), fiorillo:pv("hfFiorillo"), centro:pv("hfCentro") };
+  if (vals.cima==null && vals.dorado==null && vals.fiorillo==null && vals.centro==null) {
+    showStatus("hfStatus","err","Escribe al menos una tienda."); return;
+  }
+  // Guardar local (en HIST) para ver de inmediato
+  HIST[anio] = HIST[anio] || {};
+  HIST[anio][mes] = vals;
+  if (!cloudOn) { showStatus("hfStatus","warn","Guardado solo en este dispositivo (sin nube)."); renderHistorico(); return; }
+  var btn=$("hfGuardar"); btn.disabled=true; btn.textContent="Guardando…";
+  cloudPost({ action:"saveHistMes", anio:anio, mes:mes, vals:vals })
+    .then(function(){ showStatus("hfStatus","ok","☁️ Guardado: "+mes+" "+anio+".",5000); renderHistorico(); })
+    .catch(function(){ showStatus("hfStatus","err","No se pudo guardar en la nube. Si actualizaste el script, verifica la implementación."); })
+    .finally(function(){ btn.disabled=false; btn.textContent="Guardar mes histórico"; });
+}
+function subirSeed(){
+  if (!cloudOn) { showStatus("hfSeedStatus","err","Necesitas la nube conectada."); return; }
+  if (!confirm("Esto sube el histórico 2024-2025 a la hoja. Si ya lo subiste antes, lo reemplaza. ¿Continuar?")) return;
+  var rows=[];
+  Object.keys(HIST_SEED).forEach(function(y){
+    Object.keys(HIST_SEED[y]).forEach(function(m){
+      var r=HIST_SEED[y][m];
+      rows.push({ anio:y, mes:m, cima:r.cima, dorado:r.dorado, fiorillo:r.fiorillo, centro:r.centro });
+    });
+  });
+  var btn=$("hfSubirSeed"); btn.disabled=true; btn.textContent="Subiendo…";
+  cloudPost({ action:"saveHistAll", rows:rows })
+    .then(function(){ showStatus("hfSeedStatus","ok","☁️ Histórico 2024-2025 guardado en la hoja. Ahora puedes agregar más años.",7000); })
+    .catch(function(){ showStatus("hfSeedStatus","err","No se pudo subir. Verifica que actualizaste el script Macro con la pestaña Historico."); })
+    .finally(function(){ btn.disabled=false; btn.textContent="Subir histórico 2024-2025 a la hoja"; });
+}
+
 // ── Navegación ────────────────────────────────────────────────────
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("on", t.dataset.tab===name); });
-  ["reportar","importar","consolidado","acumulado","historico","equipo"].forEach(function(v){
+  ["reportar","importar","consolidado","acumulado","historico","equipo","inventario"].forEach(function(v){
     $("view-"+v).classList.toggle("hidden", v!==name);
   });
   if (name==="consolidado") renderConsolidado();
   if (name==="acumulado") renderAcumulado();
   if (name==="historico") renderHistorico();
   if (name==="equipo") renderEquipo();
+  if (name==="inventario") renderInventario();
 }
 
 // ── Inicio ────────────────────────────────────────────────────────
@@ -1377,7 +1649,7 @@ function guardarUrl(){
   showStatus("stCfg","ok","Guardado. Reconectando…", 2000);
   setTimeout(function(){ location.reload(); }, 900);
 }
-function init(){
+function initApp(){
   $("fecha").value = todayStr();
   // Campo de configuración de URL (solo admin)
   if (!esJefe) {
@@ -1392,6 +1664,7 @@ function init(){
     $("bannerJefe").classList.remove("hidden");
     $("tabBtnImportar").classList.add("hidden");
     $("consoBtns").classList.add("hidden");
+    var hfc=$("histFormCard"); if(hfc) hfc.classList.add("hidden");
     $("jefeBtns").classList.remove("hidden");
     $("btnRefrescar").addEventListener("click", function(){ location.reload(); });
     $("footerTxt").textContent = "Vista de solo lectura. Toca Actualizar datos para ver lo más reciente.";
@@ -1412,6 +1685,9 @@ function init(){
     $("eqQ1").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-01", m+"-13"); });
     $("eqQ2").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-14", m+"-"+String(ultimoDiaMes(m)).padStart(2,"0")); });
     $("eqMes").addEventListener("click", function(){ var m=monthOf($("fecha").value||todayStr()); setRango(m+"-01", m+"-"+String(ultimoDiaMes(m)).padStart(2,"0")); });
+    initHistForm();
+    var hg=$("hfGuardar"); if(hg) hg.addEventListener("click", guardarHistMes);
+    var hs=$("hfSubirSeed"); if(hs) hs.addEventListener("click", subirSeed);
   }
 
   $("fecha").addEventListener("change", function(){
@@ -1451,6 +1727,13 @@ function init(){
       }
       if (Object.keys(cloudMetas).length > 0) DATA.metas = cloudMetas;
       if (j.detalle) window.DETALLE = j.detalle;
+      if (j.historico && Object.keys(j.historico).length) {
+        // Merge: la nube manda; la semilla queda de respaldo para años que la nube no tenga
+        Object.keys(j.historico).forEach(function(y){
+          HIST[y] = HIST[y] || {};
+          Object.keys(j.historico[y]).forEach(function(m){ HIST[y][m] = j.historico[y][m]; });
+        });
+      }
       saveLocal();
       finishInit();
     })
@@ -1481,7 +1764,7 @@ function migrar(){
       btn.disabled = false; btn.textContent = "Subir mis datos a la nube";
     });
 }
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", setupLogin);
 </script>
 </body>
 </html>
