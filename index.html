@@ -429,6 +429,7 @@ function cloudPost(payload){
 // ── Reportar ──────────────────────────────────────────────────────
 function buildStoreForms(){
   var box = $("stores");
+  if (!box) return;
   box.innerHTML = "";
   BRANCHES.forEach(function(b){
     var div = document.createElement("div");
@@ -471,6 +472,7 @@ function updateTotals(){
   $("dayTotal").textContent = "$"+fmt(tot);
 }
 function fillFormFromDate(){
+  if (!$("stores")) return;
   var d = $("fecha").value;
   var day = DATA.days[d];
   BRANCHES.forEach(function(b){
@@ -1388,7 +1390,6 @@ function init(){
 
   if (esJefe) {
     $("bannerJefe").classList.remove("hidden");
-    $("tabBtnReportar").classList.add("hidden");
     $("tabBtnImportar").classList.add("hidden");
     $("consoBtns").classList.add("hidden");
     $("jefeBtns").classList.remove("hidden");
@@ -1396,8 +1397,7 @@ function init(){
     $("footerTxt").textContent = "Vista de solo lectura. Toca Actualizar datos para ver lo más reciente.";
     $("brandSub").textContent = "4 sucursales · consolidado";
   } else {
-    buildStoreForms();
-    $("btnGuardar").addEventListener("click", guardarDia);
+    var bg = $("btnGuardar"); if (bg) bg.addEventListener("click", guardarDia);
     $("btnEnlaceJefe").addEventListener("click", function(){
       var link = location.href.split("#")[0] + "#jefe";
       copiar(link, "stConso", "Enlace copiado. Es fijo: el jefe lo abre cuando quiera y toca Actualizar datos para ver lo último.");
