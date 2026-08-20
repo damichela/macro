@@ -128,7 +128,6 @@
 </div>
 
 <nav class="tabs" id="tabs">
-  <button class="tab" data-tab="reportar" id="tabBtnReportar">Reportar</button>
   <button class="tab" data-tab="importar" id="tabBtnImportar">Importar</button>
   <button class="tab on" data-tab="consolidado">Consolidado</button>
   <button class="tab" data-tab="acumulado">Acumulado</button>
@@ -1391,7 +1390,6 @@ function init(){
     $("bannerJefe").classList.remove("hidden");
     $("tabBtnReportar").classList.add("hidden");
     $("tabBtnImportar").classList.add("hidden");
-    $("tabBtnEquipo").classList.add("hidden");
     $("consoBtns").classList.add("hidden");
     $("jefeBtns").classList.remove("hidden");
     $("btnRefrescar").addEventListener("click", function(){ location.reload(); });
@@ -1468,7 +1466,7 @@ function finishInit(){
   if (!esJefe) fillFormFromDate();
   renderConsolidado();
   renderAcumulado();
-  switchTab(esJefe ? "consolidado" : "reportar");
+  switchTab(esJefe ? "consolidado" : "importar");
 }
 function migrar(){
   var btn = $("btnMigrar");
