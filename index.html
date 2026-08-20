@@ -146,19 +146,6 @@
   <button class="tab" data-tab="inventario" id="tabBtnInventario">Inventario</button>
 </nav>
 
-<!-- REPORTAR -->
-<section id="view-reportar" class="hidden">
-  <div class="card">
-    <div class="sec-title">REPORTE DEL DÍA · LAS 4 TIENDAS</div>
-    <div id="stores"></div>
-    <div class="day-total">
-      <span class="lbl">VENTA TOTAL DEL DÍA</span>
-      <span class="val" id="dayTotal">$0</span>
-    </div>
-    <button class="btn" id="btnGuardar">Guardar día</button>
-    <div class="status" id="stReportar"></div>
-  </div>
-</section>
 
 <!-- IMPORTAR -->
 <section id="view-importar" class="hidden">
@@ -1696,7 +1683,6 @@ function initApp(){
   }
 
   $("fecha").addEventListener("change", function(){
-    if (!esJefe) fillFormFromDate();
     renderConsolidado();
     if (!$("view-acumulado").classList.contains("hidden")) renderAcumulado();
   });
@@ -1751,7 +1737,6 @@ function initApp(){
 function finishInit(){
   var dates = sortedDates();
   if (esJefe && dates.length) $("fecha").value = dates[dates.length-1];
-  if (!esJefe) fillFormFromDate();
   renderConsolidado();
   renderAcumulado();
   switchTab(esJefe ? "consolidado" : "importar");
