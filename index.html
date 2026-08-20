@@ -412,6 +412,11 @@ function setupLogin(){
 
 var SCRIPT_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbzXBCUW5yilI5D9nE8bMG6qhE2ynr_JyxR1ohwRGSk-ZeorpKN2N1mB-mm08EGYWk_e/exec";
 var SCRIPT_URL = (function(){
+  // La URL fija del código tiene prioridad. Solo usa la guardada si NO hay fija.
+  if (SCRIPT_URL_DEFAULT && SCRIPT_URL_DEFAULT.indexOf("https://") === 0) {
+    try { localStorage.setItem("macro.scriptUrl", SCRIPT_URL_DEFAULT); } catch(e){}
+    return SCRIPT_URL_DEFAULT;
+  }
   try { var u = localStorage.getItem("macro.scriptUrl"); if (u) return u; } catch(e){}
   return SCRIPT_URL_DEFAULT;
 })();
